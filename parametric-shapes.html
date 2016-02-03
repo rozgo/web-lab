@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+		<title>Pixar</title>
+		<style>
+			body { margin: 0; background-color: black;}
+			canvas { width: 100%; height: 100% }
+		</style>
+
+		<script src="js/three.js/r73/three.min.js"></script>
+		<script src="js/texgen.js/src/TexGen.js"></script>
+		<script src="js/controls/OrbitControls.js"></script>
+		<script src="js/loaders/OBJLoader.js"></script>
+		<script src="js/shaders/CopyShader.js"></script>
+		<script src="js/shaders/ConvolutionShader.js"></script>
+		<script src="js/postprocessing/BloomPass.js"></script>
+		<script src="js/postprocessing/RenderPass.js"></script>
+		<script src="js/postprocessing/ShaderPass.js"></script>
+		<script src="js/postprocessing/MaskPass.js"></script>
+		<script src="js/postprocessing/EffectComposer.js"></script>
+
+		<script>
+		var shaders = {};
+		var renderer = null;
+		var animate = null;
+		</script>
+
+		<script src="bin/texgen.js"></script>
+		<script src="bin/hsv.js"></script>
+
+		<script src="bin/pixar.vs.js"></script>
+		<script src="bin/pixar.fs.js"></script>
+		<script src="bin/pixar.js"></script>
+
+		<script src="bin/terrain.vs.js"></script>
+		<script src="bin/terrain.fs.js"></script>
+		<script src="bin/terrain.js"></script>
+
+		<script src="bin/shapes.js"></script>
+
+		<script src="bin/shapes.scene.js"></script>
+		<!-- <script src="bin/textures.scene.js"></script> -->
+		<!-- <script src="bin/pixar.scene.js"></script> -->
+
+		<script src="bin/main.js"></script>
+
+	</head>
+
+	<body style="margin: 0px;" onload="init()">
+		<script>
+		function init() {
+	    var container = document.body;
+	    container.appendChild( renderer.domElement );
+	    animate();
+		}
+		var app = Elm.worker(Elm.Main, {addUser: ["Rozgo", { age: 37, job: "programmer" }]});
+		app.ports.addUser.send(["Tom", { age: 32, job: "lumberjack" }]);
+		app.ports.addUser.send(["Bob", { age: 32, job: "lumberjack" }]);
+		app.ports.requestUser.subscribe(databaseLookup);
+		function databaseLookup(user) {
+		    console.log(user);
+		}
+
+		</script>
+	</body>
+
+</html>

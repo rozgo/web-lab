@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<!-- <meta name="viewport" content="minimum-scale=1.0, width=device-width, maximum-scale=1.0, user-scalable=no, initial-scale=1"> -->
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+		<title>My first Three.js app</title>
+		<style>
+			body { margin: 0; background-color: black;}
+			canvas { width: 100%; height: 100% }
+		</style>
+
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r72/three.min.js"></script>
+		<script src="OBJLoader.js"></script>
+
+		<script id="vertShader" type="shader">
+
+		#ifdef USE_SHADOWMAP
+			varying vec4 vShadowCoord[ MAX_SHADOWS ];
+			uniform mat4 shadowMatrix[ MAX_SHADOWS ];
+		#endif
+
+		uniform vec3 directionalLightDirection[MAX_DIR_LIGHTS];
+		uniform vec3 directionalLightColor[MAX_DIR_LIGHTS];
+
+		attribute vec3 offset;
+
+		varying vec2 vUv;
+		varying vec4 vecColor;
+		varying vec3 hsv;
+		varying vec3 rim;
+
+		vec3 rgb2hsv(vec3 c)
+		{
+		    vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
+		    vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
+		    vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r));
+
+		    float d = q.x - min(q.w, q.y);
+		    float e = 1.0e-10;
+		    return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
+		}
+
+		vec3 hsv2rgb(vec3 c)
+		{
+		    vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+		    vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+		    return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+		}
+
+		void main() {
+		    vUv = position.xz / 3.46;
+		    vec3 vecPos = (modelMatrix * vec4(position + offset, 1.0 )).xyz;
+		    vec3 vecNormal = normalize((normalMatrix) * normal);
+		    gl_Position = projectionMatrix * viewMatrix * vec4(vecPos, 1.0);
+
+				vec4 addedLights = vec4(0.0,0.0,0.0, 1.0);
+		    for(int l = 0; l < MAX_DIR_LIGHTS; l++) {
+				    float n = clamp(dot(directionalLightDirection[l], vecNormal * 0.5 + 0.5), 0.0, 1.0);
+		        addedLights.rgb += n * directionalLightColor[l];
+		    }
+
+				vecColor = addedLights + vec4(color, 1.0);
+
+
+				vec3 mvNormal = normalize(mat3(modelViewMatrix) * normal);
+				vec3 mvPosition = (modelViewMatrix * vec4(position, 1.0 )).xyz;
+				vec3 mvToEye = normalize(-mvPosition);
+				float rimPower = 1.0 - max(dot(mvToEye, mvNormal), 0.0);
+
+				rim = vec3(smoothstep(0.6, 1.0, rimPower)) * vec3(0.0, 0.5, 0.9) * 0.0;
+
+				hsv = rgb2hsv(vecColor.rgb);
+
+				#ifdef USE_SHADOWMAP
+					for( int i = 0; i < MAX_SHADOWS; i ++ ) {
+						vShadowCoord[ i ] = shadowMatrix[ i ] * vec4(vecPos,1.0);
+					}
+				#endif
+		}
+		</script>
+
+		<script id="fragShader" type="shader">
+		precision highp float;
+
+		const float PI = 3.1415926535897932384626433832795;
+		const float PI_2 = 1.57079632679489661923;
+		const float PI_4 = 0.785398163397448309616;
+
+		varying vec2 vUv;
+		// varying vec3 vecPos;
+		varying vec4 vecColor;
+		varying vec3 hsv;
+		varying vec3 rim;
+
+		uniform sampler2D evilCreature;
+
+		#ifdef USE_SHADOWMAP
+
+			uniform sampler2D shadowMap[ MAX_SHADOWS ];
+			uniform vec2 shadowMapSize[ MAX_SHADOWS ];
+
+			uniform float shadowDarkness[ MAX_SHADOWS ];
+			uniform float shadowBias[ MAX_SHADOWS ];
+
+			varying vec4 vShadowCoord[ MAX_SHADOWS ];
+
+			float unpackDepth( const in vec4 rgba_depth ) {
+
+				const vec4 bit_shift = vec4( 1.0 / ( 256.0 * 256.0 * 256.0 ), 1.0 / ( 256.0 * 256.0 ), 1.0 / 256.0, 1.0 );
+				float depth = dot( rgba_depth, bit_shift );
+				return depth;
+
+			}
+
+		#endif
+
+		vec3 rgb2hsv(vec3 c)
+		{
+		    vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
+		    vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
+		    vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r));
+
+		    float d = q.x - min(q.w, q.y);
+		    float e = 1.0e-10;
+		    return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
+		}
+
+		vec3 hsv2rgb(vec3 c)
+		{
+		    vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+		    vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+		    return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+		}
+
+		void main(void) {
+				vec4 c = vec4(hsv2rgb(hsv), 1.0);
+
+				vec4 diffuse = texture2D(evilCreature, vUv);
+
+				if (diffuse.a > 0.1) {
+
+					vec3 diffuseHSV = rgb2hsv(diffuse.rgb * (vecColor.rgb * 0.5 + 0.5) );
+
+					vec3 outgoingLight = vec3(1.0);
+
+					%shadowmap_fragment%
+
+					diffuseHSV.g = (max(diffuseHSV.g + max(1.0 - hsv.b * outgoingLight.r, 0.0), 0.0)) * 1.0;
+					diffuseHSV.b = diffuseHSV.b * outgoingLight.r;
+					vec4 diffuseRGB = vec4(hsv2rgb(diffuseHSV), 1.0);
+
+					gl_FragColor = diffuseRGB + vec4(rim,1.0);
+				}
+				else {
+					discard;
+				}
+
+		}
+
+		</script>
+
+		<script>
+			// document.ontouchmove = function(e){ e.preventDefault(); }
+
+			// standard global variables
+			var scene, camera, renderer;
+
+			var customMaterial;
+
+			// Character 3d object
+			var character = null;
+
+			var bumbleBee = new THREE.Object3D();
+			var spiderman = new THREE.Object3D();
+			var hulk = new THREE.Object3D();
+			var link = new THREE.Object3D();
+			var colorbox = new THREE.Object3D();
+
+			var wiremat = new THREE.MeshLambertMaterial({
+				color: 0x888888,
+				side: THREE.DoubleSide,
+				wireframe: true
+			});
+
+			// FUNCTIONS
+			function init() {
+				// SCENE
+				scene = new THREE.Scene();
+
+				// CAMERA
+				var SCREEN_WIDTH = window.innerWidth,
+					SCREEN_HEIGHT = window.innerHeight;
+				var VIEW_ANGLE = 45,
+					ASPECT = SCREEN_WIDTH / SCREEN_HEIGHT,
+					NEAR = 0.1,
+					FAR = 1000;
+				camera = new THREE.PerspectiveCamera(VIEW_ANGLE, ASPECT,
+					NEAR, FAR);
+				scene.add(camera);
+				camera.position.set(20, 30, 20);
+				camera.lookAt(scene.position);
+
+				// RENDERER
+				renderer = new THREE.WebGLRenderer({
+					antialias: true,
+					alpha: true
+				});
+				renderer.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
+				renderer.setClearColor(0x222222, 1);
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				//renderer.setClearColor( 0x00ddff, 1);
+
+				renderer.shadowMap.enabled = true;
+
+				var ext = renderer.context.getExtension("ANGLE_instanced_arrays");
+				console.log(ext);
+				// renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+				// renderer.shadowMap.soft = true;
+
+				// renderer.shadowCameraNear = 0.1;
+				// renderer.shadowCameraFar = camera.far;
+				// renderer.shadowCameraFov = 60;
+
+				var customTexture = THREE.ImageUtils.loadTexture('uv-guide.jpg');
+				// customTexture.magFilter = THREE.NearestFilter;
+
+				var grassTex = THREE.ImageUtils.loadTexture('grass.jpg');
+				grassTex.wrapS = THREE.RepeatWrapping;
+				grassTex.wrapT = THREE.RepeatWrapping;
+
+
+				var createMaterial = function() {
+					return new THREE.ShaderMaterial({
+						uniforms: THREE.UniformsUtils.merge([
+							THREE.UniformsLib['lights'],
+							THREE.UniformsLib["shadowmap"], {
+								color: {
+									type: 'f',
+									value: 0.0
+								},
+								evilCreature: {
+									type: 't',
+									value: null
+								}
+							}
+						]),
+						vertexShader: document.getElementById('vertShader').text,
+						fragmentShader: document.getElementById('fragShader').text.replace("%shadowmap_fragment%", THREE.ShaderChunk["shadowmap_fragment"]),
+						transparent: true,
+						lights: true,
+						side: THREE.FrontSide,
+						vertexColors: THREE.VertexColors
+					});
+				}
+				customMaterial = createMaterial();
+				customMaterial.uniforms.evilCreature.value = customTexture;
+
+
+
+				// instantiate a loader
+				var loader = new THREE.JSONLoader();
+
+				// load a resource
+				loader.load(
+					// resource URL
+					'tile_top_01.json',
+					// Function when resource is loaded
+					function(geometryA, materials) {
+						//var material = new THREE.MeshFaceMaterial( materials );
+						var material = createMaterial();
+
+						var instances = 100;
+						var insSqr = Math.sqrt(instances);
+
+						var geometry = new THREE.InstancedBufferGeometry().fromGeometry(geometryA);
+						geometry.maxInstancedCount = instances;
+
+						var offsets = new THREE.InstancedBufferAttribute( new Float32Array( instances * 3 ), 3, 1 );
+						for ( var i = 0, ol = offsets.length; i < ol; ++i ) {
+							var h = (i / insSqr) % 2;
+							var x = (i % insSqr) * 3.46 - h * (3.46 / 2.0);
+							var z = Math.floor(i / insSqr) * 3;// - (h) * 1.0;//((i % insSqr) + i / insSqr) * 3.46;// + 3.0 * (h) % 2;
+							offsets.setXYZ( i, x, 0.0, z);
+							//console.log(i)
+						}
+						geometry.addAttribute( 'offset', offsets );
+
+
+						material.uniforms.evilCreature.value = grassTex;
+						var object = new THREE.Mesh(geometry, material);
+						geometry.castShadow = true;
+						geometry.receiveShadow = true;
+						scene.add(object);
+						colorbox = object;
+					}
+				);
+
+
+				var container = document.body;
+				container.appendChild(renderer.domElement);
+
+				// Main polygon
+				character = buildCharacter();
+				character.position.x = 2;
+				character.position.z = 1;
+				character.position.y = 2;
+				character.castShadow = true;
+				// scene.add(character);
+
+				var directionalLight = new THREE.DirectionalLight(0xffaaaa, 1.0);
+				directionalLight.position.set(0, 4, 5);
+				// directionalLight.target.position.set( 0, 2, 0 );
+				directionalLight.castShadow = true;
+				// directionalLight.shadowCameraVisible = true;
+
+
+
+				directionalLight.shadowCameraRight = 5;
+				directionalLight.shadowCameraLeft = -5;
+				directionalLight.shadowCameraTop = 5;
+				directionalLight.shadowCameraBottom = -5;
+
+				directionalLight.shadowCameraNear = 0.1;
+				directionalLight.shadowCameraFar = 20;
+
+				directionalLight.shadowMapBias = 0.0039;
+				// directionalLight.shadowMapDarkness = 2.0;
+				directionalLight.shadowMapWidth = 2048;
+				directionalLight.shadowMapHeight = 2048;
+
+
+
+				scene.add(directionalLight);
+
+				// var dirLighthelper = new THREE.DirectionalLightHelper (directionalLight, 1);
+				// scene.add( dirLighthelper );
+
+				var geometry = new THREE.PlaneGeometry(10, 10, 100, 100);
+
+				var plane = new THREE.Mesh(geometry, customMaterial);
+
+				scene.add(plane);
+				//log (Math.PI);
+				plane.rotation.x = -Math.PI / 2;
+				plane.receiveShadow = true;
+
+				var gridHelper = new THREE.GridHelper(5, 1);
+				// scene.add( gridHelper );
+
+				// Start animation
+				animate();
+			}
+
+			var buildCharacter = (function() {
+				var _geo = null;
+
+				// Share the same geometry across all planar objects
+				function getPlaneGeometry() {
+					if (_geo == null) {
+						_geo = new THREE.TorusGeometry(0.8, 0.4, 16, 100);
+					}
+
+					return _geo;
+				};
+
+				return function() {
+					var g = getPlaneGeometry();
+					var mat2 = new THREE.MeshLambertMaterial({
+						color: 0x888888,
+						side: THREE.DoubleSide,
+						wireframe: false
+					});
+					var obj = new THREE.Mesh(g, customMaterial);
+					return obj;
+				}
+			})();
+
+			function animate() {
+				// Update uniform
+				var c = 0.5 + 0.5 * Math.cos(
+					new Date().getTime() / 1000.0 * Math.PI);
+				//character.material.uniforms.color.value = c;
+
+				// character.material.needsUpdate = true;
+
+				character.rotation.x += 0.01;
+				character.rotation.y += 0.01;
+
+				bumbleBee.rotation.z += 0.01;
+
+				spiderman.rotation.y += 0.01;
+
+				hulk.rotation.y += 0.01;
+
+				link.rotation.y += 0.01;
+
+				colorbox.rotation.y += 0.01;
+
+				// Render scene
+				renderer.render(scene, camera);
+				requestAnimationFrame(animate);
+			}
+		</script>
+
+	</head>
+
+	<body style="margin: 0px;" onload="init()"></body>
+
+</html>
