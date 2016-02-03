@@ -20,8 +20,8 @@ scene = (domScene) ->
     antialias: true
     alpha: true
   renderer.setSize SCREEN_WIDTH, SCREEN_HEIGHT
-  #renderer.setClearColor 0x222222, 1
-  renderer.setClearColor 0x000000, 1
+  renderer.setClearColor 0x222222, 1
+  # renderer.setClearColor 0x000000, 1
   renderer.shadowMap.enabled = true
   renderer.gammaInput = true
   renderer.gammaOutput = true
@@ -116,39 +116,39 @@ scene = (domScene) ->
 
   makeShapes = ->
 
-    texture = (new TG.Texture 8, 8)
-    		.add( new TG.LinearGradient()
-        # .center 128, 256
-        # .radius 200
-        .interpolation( 1 )
-        .point( 0, [1.0,1.0,1.0,1] )
-        .point( 0.2, [0.7,0.7,0.7,1])
-        .point( 0.4, [0.5,0.5,0.5,1])
-        .point( 1, [0.0,0.0,0.0,1]) )
-
-        .set(new TG.Transform().angle(90))
-        # .mul( new TG.SinX().frequency( Math.PI ).tint( 1.0, 1.0, 1.0 ) )
-
-        # .add( new TG.Noise() )
-    diffuse = new THREE.DataTexture (texture.toTHREE()), texture.buffer.width, texture.buffer.height, THREE.RGBAFormat
-    diffuse.generateMipmaps = true
-    diffuse.magFilter = THREE.LinearFilter
-    diffuse.minFilter = THREE.LinearMipMapLinearFilter
-    diffuse.wrapS = THREE.RepeatWrapping
-    diffuse.wrapT = THREE.RepeatWrapping
-    diffuse.needsUpdate = true
+    # texture = (new TG.Texture 8, 8)
+    # 		.add( new TG.LinearGradient()
+    #     # .center 128, 256
+    #     # .radius 200
+    #     .interpolation( 1 )
+    #     .point( 0, [1.0,1.0,1.0,1] )
+    #     .point( 0.2, [0.7,0.7,0.7,1])
+    #     .point( 0.4, [0.5,0.5,0.5,1])
+    #     .point( 1, [0.0,0.0,0.0,1]) )
+    #
+    #     .set(new TG.Transform().angle(90))
+    #     # .mul( new TG.SinX().frequency( Math.PI ).tint( 1.0, 1.0, 1.0 ) )
+    #
+    #     # .add( new TG.Noise() )
+    # diffuse = new THREE.DataTexture (texture.toTHREE()), texture.buffer.width, texture.buffer.height, THREE.RGBAFormat
+    # diffuse.generateMipmaps = true
+    # diffuse.magFilter = THREE.LinearFilter
+    # diffuse.minFilter = THREE.LinearMipMapLinearFilter
+    # diffuse.wrapS = THREE.RepeatWrapping
+    # diffuse.wrapT = THREE.RepeatWrapping
+    # diffuse.needsUpdate = true
     # createMonitor diffuse
 
     shapeMaterial = Pixar.createMaterial()
-    # textureLoader.load 'assets/wood-color.jpg', (texture) ->
-    #   shapeMaterial.uniforms.map.value = texture
+    textureLoader.load 'assets/uv-guide-02.jpg', (texture) ->
+      shapeMaterial.uniforms.map.value = texture
 
-    shapeMaterial.uniforms.diffuse.value = new THREE.Color 0x808090
+    # shapeMaterial.uniforms.diffuse.value = new THREE.Color 0x907050
     # shapeMaterial.uniforms.map.value = diffuse
     shapeMaterial.uniforms.offsetRepeat.value = new THREE.Vector4 0, 0, 1, 1
-    shapeMaterial.uniforms.rimColor.value = new THREE.Color 0x00edff
+    # shapeMaterial.uniforms.rimColor.value = new THREE.Color 0xffed00
     shapeMaterial.uniforms.rimPower.value = 0.4
-    shapeMaterial.uniforms.rimIntensity.value = 0.3
+    shapeMaterial.uniforms.rimIntensity.value = 0.5
 
     spacing = 5
     offset = spacing * 2
@@ -159,7 +159,7 @@ scene = (domScene) ->
       geometry.computeFaceNormals()
       geometry.computeVertexNormals()
 
-      instances = 3;
+      instances = 1;
       instancedGeo = new THREE.InstancedBufferGeometry().fromGeometry(geometry)
       instancedGeo.maxInstancedCount = instances
 
@@ -282,7 +282,7 @@ scene = (domScene) ->
     # monitorPlane.position.set 0, 4, -8
     # camera.add monitorPlane
 
-  makeTerrain()
+  # makeTerrain()
 
   makeSky = ->
 
@@ -323,7 +323,7 @@ scene = (domScene) ->
       # texture.wrapT = THREE.RepeatWrapping
       # material.uniforms.map.value = texture
       sky.object = new THREE.Mesh geo, material
-      scene.add sky.object
+      # scene.add sky.object
     sky
 
   sky = makeSky()

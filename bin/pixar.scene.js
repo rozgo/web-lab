@@ -2,18 +2,16 @@
   var scene;
 
   scene = function(domScene) {
-    var ASPECT, FAR, NEAR, SCREEN_HEIGHT, SCREEN_WIDTH, VIEW_ANGLE, animate, bumblebee, camera, cameraHelper, composer, controls, customMaterial, directionalLight, effectBloom, effectCopy, effectFXAA, hulk, loadOBJ, loader, plane, planeGEO, planeMat, renderer, spiderman, textureLoader, torus;
+    var ASPECT, FAR, NEAR, SCREEN_HEIGHT, SCREEN_WIDTH, VIEW_ANGLE, animate, bumblebee, camera, cameraHelper, composer, controls, customMaterial, directionalLight, effectBloom, effectCopy, effectFXAA, hulk, loadOBJ, loader, lookObj, plane, planeGEO, planeMat, renderer, spiderman, textureLoader, torusGeo, torusMat, torusObj;
     SCREEN_WIDTH = domScene.width;
     SCREEN_HEIGHT = domScene.height;
     VIEW_ANGLE = 60;
     ASPECT = SCREEN_WIDTH / SCREEN_HEIGHT;
     NEAR = 0.1;
     FAR = 1000;
-    torus = new THREE.Object3D;
     scene = new THREE.Scene;
     camera = new THREE.PerspectiveCamera(VIEW_ANGLE, ASPECT, NEAR, FAR);
     camera.position.set(7, 5, 7);
-    camera.lookAt(scene.position);
     scene.add(camera);
     renderer = new THREE.WebGLRenderer({
       antialias: false,
@@ -26,7 +24,9 @@
     renderer.gammaOutput = true;
     renderer.autoClear = false;
     domScene.renderer = renderer;
+    lookObj = new THREE.Object3D;
     controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.target.set(0, 2, 0);
     composer = new THREE.EffectComposer(renderer);
     composer.addPass(new THREE.RenderPass(scene, camera));
     effectFXAA = new THREE.ShaderPass(FXAA.createMaterial(SCREEN_WIDTH, SCREEN_HEIGHT));
@@ -53,7 +53,7 @@
     };
     hulk = {
       source: 'assets/Hulk/Hulk.obj',
-      diffuse: 'assets/Hulk/Hulk.png',
+      diffuse: 'assets/Hulk/Hulk2.png',
       object: new THREE.Object3D
     };
     loadOBJ = function(entity, onload) {
@@ -61,14 +61,15 @@
       onloadOBJ = function(object) {
         var material;
         material = Pixar.createMaterial();
+        material.uniforms.rimPower.value = 0.4;
+        material.uniforms.rimIntensity.value = 0.5;
         textureLoader.load(entity.diffuse, function(texture) {
           return material.uniforms.map.value = texture;
         });
         object.traverse(function(child) {
           if (child instanceof THREE.Mesh) {
             child.material = material;
-            child.castShadow = true;
-            return child.receiveShadow = true;
+            return child.castShadow = true;
           }
         });
         onload(object, material);
@@ -78,12 +79,14 @@
       return loader.load(entity.source, onloadOBJ);
     };
     loadOBJ(bumblebee, function(object, material) {
+      material.uniforms.diffuse.value = new THREE.Color(0x707070);
       object.position.x = -1;
       object.position.z = 2;
-      object.scale.set(0.006, 0.006, 0.006);
+      object.scale.set(0.007, 0.007, 0.007);
       return object.rotation.x = -Math.PI / 2;
     });
     loadOBJ(spiderman, function(object, material) {
+      material.uniforms.diffuse.value = new THREE.Color(0x909090);
       object.position.x = 2;
       return object.position.z = -1;
     });
@@ -119,11 +122,21 @@
     scene.add(directionalLight);
     cameraHelper = new THREE.CameraHelper(directionalLight.shadow.camera);
     scene.add(cameraHelper);
+    torusMat = Pixar.createMaterial();
+    torusMat.uniforms.diffuse.value = new THREE.Color(0xf08020);
+    torusGeo = new THREE.TorusGeometry(0.7, 0.3, 16, 100);
+    torusObj = new THREE.Mesh(torusGeo, torusMat);
+    torusObj.castShadow = true;
+    torusObj.position.set(3, 2, 3);
+    scene.add(torusObj);
     animate = function() {
       requestAnimationFrame(animate);
+      controls.update();
       bumblebee.object.rotation.z += 0.01;
       spiderman.object.rotation.y += 0.01;
       hulk.object.rotation.y += 0.01;
+      torusObj.rotation.x += 0.01;
+      torusObj.rotation.y += 0.01;
       return composer.render();
     };
     return domScene.animate = animate;

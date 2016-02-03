@@ -20,7 +20,7 @@
       alpha: true
     });
     renderer.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
-    renderer.setClearColor(0x000000, 1);
+    renderer.setClearColor(0x222222, 1);
     renderer.shadowMap.enabled = true;
     renderer.gammaInput = true;
     renderer.gammaOutput = true;
@@ -68,21 +68,14 @@
     scene.add(directionalLight);
     params = [Shape.supershape(1, 1, 2, 2, 2, 2, 1, 1, 2, 2, 2, 2), Shape.supershape(1, 1, 1, 37, 1, 19, 1, 1, 4, 100, 100, 100), Shape.supershape(1, 1, 4, 100, 100, 100, 1, 1, 4, 100, 100, 100), Shape.supershape(1, 1, 4, 1, 1, 1, 1, 1, 4, 1, 1, 1), Shape.supershape(1, 1, 4, 100, 1, 1, 1, 1, 4, 1, 1, 1), Shape.supershape(1, 1, 3, 260, 500, 500, 1, 1, 4, 200, 200, 200), Shape.supershape(1, 1, 5, 1000, 600, 600, 1, 1, 4, 300, 300, 300), Shape.supershape(1, 1, 6, 1000, 400, 400, 1, 1, 4, 300, 300, 300), Shape.supershape(1, 1, 5, 3, 6, 6, 1, 1, 5, 3, 6, 6), Shape.supershape(1, 1, 7, 3, 4, 17, 1, 1, 7, 3, 4, 17), Shape.supershape(1, 1, 2, 14, 6, 16, 1, 1, 11, 5, 15, 9), Shape.supershape(1, 1, 19, 9, 14, 11, 1, 1, 19, 9, 14, 11), Shape.supershape(1, 1, 12, 19, 2, 3, 1, 1, 4, 3, 12, 8), Shape.supershape(1, 1, 6, 10, 20, 15, 1, 1, 1, 2, 10, 10), Shape.supershape(1, 1, 3, 2, 18, 3, 1, 1, 1, 5, 5, 2), Shape.supershape(1, 1, 5, 1, 1, 2, 1, 1, 5, 1, 1, 3), Shape.cylinder, Shape.trumpet, Shape.sphere, Shape.astroidal, Shape.cube, Shape.plane, Shape.torus, Shape.radialWave];
     makeShapes = function() {
-      var diffuse, geometry, i, instancedGeo, instances, j, k, l, mesh, offset, offsets, ref, ref1, results, shapeMaterial, spacing, texture, x, z;
-      texture = (new TG.Texture(8, 8)).add(new TG.LinearGradient().interpolation(1).point(0, [1.0, 1.0, 1.0, 1]).point(0.2, [0.7, 0.7, 0.7, 1]).point(0.4, [0.5, 0.5, 0.5, 1]).point(1, [0.0, 0.0, 0.0, 1])).set(new TG.Transform().angle(90));
-      diffuse = new THREE.DataTexture(texture.toTHREE(), texture.buffer.width, texture.buffer.height, THREE.RGBAFormat);
-      diffuse.generateMipmaps = true;
-      diffuse.magFilter = THREE.LinearFilter;
-      diffuse.minFilter = THREE.LinearMipMapLinearFilter;
-      diffuse.wrapS = THREE.RepeatWrapping;
-      diffuse.wrapT = THREE.RepeatWrapping;
-      diffuse.needsUpdate = true;
+      var geometry, i, instancedGeo, instances, j, k, l, mesh, offset, offsets, ref, ref1, results, shapeMaterial, spacing, x, z;
       shapeMaterial = Pixar.createMaterial();
-      shapeMaterial.uniforms.diffuse.value = new THREE.Color(0x808090);
+      textureLoader.load('assets/uv-guide-02.jpg', function(texture) {
+        return shapeMaterial.uniforms.map.value = texture;
+      });
       shapeMaterial.uniforms.offsetRepeat.value = new THREE.Vector4(0, 0, 1, 1);
-      shapeMaterial.uniforms.rimColor.value = new THREE.Color(0x00edff);
       shapeMaterial.uniforms.rimPower.value = 0.4;
-      shapeMaterial.uniforms.rimIntensity.value = 0.3;
+      shapeMaterial.uniforms.rimIntensity.value = 0.5;
       spacing = 5;
       offset = spacing * 2;
       results = [];
@@ -91,7 +84,7 @@
         geometry.mergeVertices();
         geometry.computeFaceNormals();
         geometry.computeVertexNormals();
-        instances = 3;
+        instances = 1;
         instancedGeo = new THREE.InstancedBufferGeometry().fromGeometry(geometry);
         instancedGeo.maxInstancedCount = instances;
         x = i % 5 * spacing - offset;
@@ -144,7 +137,6 @@
       scene.add(mesh);
       return createMonitor(heightmap);
     };
-    makeTerrain();
     makeSky = function() {
       var geo, sky, skymap, skysphere, texture;
       texture = (new TG.Texture(64, 64)).set(new TG.LinearGradient().interpolation(2).point(0, [0.8, 0.8, 1, 1]).point(0.25, [1, 1, 1, 1]).point(0.5, [0, 0, 0, 1]).point(0.75, [0, 0, 0, 1]).point(1, [1, 1, 1, 1])).set(new TG.Transform().angle(90));
@@ -170,8 +162,7 @@
           side: THREE.FrontSide,
           map: texture
         });
-        sky.object = new THREE.Mesh(geo, material);
-        return scene.add(sky.object);
+        return sky.object = new THREE.Mesh(geo, material);
       });
       return sky;
     };
