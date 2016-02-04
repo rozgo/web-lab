@@ -1,5 +1,5 @@
 (function() {
-  var coffee, date, fs, path, statico;
+  var coffee, date, file, fs, path, server, statico;
 
   fs = require('fs');
 
@@ -39,5 +39,18 @@
       return console.log("\nSTACKTRACE:\n", e.stack);
     }
   });
+
+  file = new statico.Server('.');
+
+  server = require('http').createServer(function(request, response) {
+    var listener;
+    listener = request.addListener('end', function() {
+      console.log(request.url);
+      return file.serve(request, response);
+    });
+    return listener.resume();
+  });
+
+  server.listen(8000);
 
 }).call(this);

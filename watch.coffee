@@ -1,7 +1,6 @@
 fs = require 'fs'
 path = require 'path'
 coffee = require 'coffee-script'
-# coffee = require('coffee-script').register()
 statico = require 'node-static'
 
 date = ->
